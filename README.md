@@ -25,3 +25,6 @@ This is my little cozy Development Environment to test and update.
 # DNS Server
 Not included is a DNS Server that resolves your internal IP to "*.sites.test". There are many ways to get this working: DNSMasq, Bind9, Unbind, ... The simplest way for me was to switch the included DNS Server on my NAS on.
 DNS juggling can be very frustrating, if you do it with BIND9 oder Unbind, make sure you have someone you can ask why "this does not work".
+
+# Made by
+PHOENIXSEO.de Frank Pfabigan e.K., https://phoenixseo.de
