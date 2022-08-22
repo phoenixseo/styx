@@ -1,0 +1,108 @@
+# Styx (River in Hades)
+#
+# WebDevel Server in Container
+# - Apache 2.4
+# - PHP 7.4 (oder 8.1)
+# - Composer 2
+# - httpd Port 8080
+#
+# run:
+# >> cd ./styx
+# >> podman-compose up -d
+# stop:
+# >> podman-compose down
+#
+version: "4"
+services:
+  webserver7:
+    container_name: styx-webserver7
+    build:
+      # docker.io/library/php:7-apache
+      context: ./app/apache-php7/container
+      dockerfile: Dockerfile
+    ports:
+      - ${HTTPD_PORT_HOST}:${HTTPD_PORT_CONTAINER}
+    networks:
+      - styxnet
+    volumes:
+      - ./app/apache-php7/config/zzz-00-app.conf:/etc/apache2/sites-enabled/zzz-00-app.conf:Z
+      - ${HTTPD_WEBROOT_HOST}:${HTTP_WEBROOT_CONTAINER}:Z
+
+
+  webserver8:
+    container_name: styx-webserver8
+    build:
+      context: ./app/apache-php8/container
+      dockerfile: Dockerfile
+    ports:
+      - 8088:${HTTPD_PORT_CONTAINER}
+    networks:
+      - styxnet
+    volumes:
+      - ./app/apache-php8/config/zzz-00-app.conf:/etc/apache2/sites-enabled/zzz-00-app.conf:Z
+      - ${HTTPD_WEBROOT_HOST}:${HTTP_WEBROOT_CONTAINER}:Z
+
+
+  mariadb:
+    container_name: styx-mariadb
+    # url: https://hub.docker.com/r/bitnami/mariadb/
+    image: docker.io/bitnami/mariadb:10.8
+    networks:
+      - styxnet
+    ports:
+      - 3306:3306
+    volumes:
+      - ./files/mariadb_data:/bitnami/mariadb:Z
+    environment:
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+      - MARIADB_USER=dbuser
+      - MARIADB_PASSWORD=dbpass
+      - MARIADB_DATABASE=mysql
+    healthcheck:
+      test: ['CMD', '/opt/bitnami/scripts/mariadb/healthcheck.sh']
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
+  phpmyadmin:
+    container_name: styx-phpmyadmin
+    # url: https://hub.docker.com/r/bitnami/phpmyadmin
+    image: docker.io/bitnami/phpmyadmin:latest
+    networks:
+      - styxnet
+    ports:
+      - 8081:8080
+      - 8444:8443
+    environment:
+      - PHPMYADMIN_ALLOW_ARBITRARY_SERVER=false
+      - PHPMYADMIN_ALLOW_REMOTE_CONNECTIONS=yes
+      - DATABASE_ALLOW_NO_PASSWORD=yes
+      - DATABASE_HOST=mariadb
+      - DATABASE_PORT_NUMBER=3306
+      - DATABASE_ENABLE_SSL=no
+      - PHP_MEMORY_LIMIT=512M
+      - PHP_POST_MAX_SIZE=1024M
+      - PHP_UPLOAD_MAX_FILESIZE=1024M
+      - PHP_MAX_INPUT_TIME=0
+    depends_on:
+      - mariadb
+
+  redis:
+    container_name: styx-redis
+    image: docker.io/bitnami/redis:7.0
+    environment:
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    networks:
+      - styxnet
+    ports:
+      - '6379:6379'
+    volumes:
+      - ./files/redis_data:/bitnami/redis/data:Z
+
+
+networks:
+  styxnet:
+    driver: bridge
